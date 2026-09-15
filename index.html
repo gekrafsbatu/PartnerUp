@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gekrafs PartnerUp</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; overflow:hidden; }
+    iframe { border:0; width:100%; height:100vh; height:100dvh; display:block; }
+  </style>
+</head>
+<body>
+  <iframe id="app" allow="clipboard-write"></iframe>
+  <script>
+    // GANTI dengan URL /exec Web App Gekrafs PartnerUp kalau nanti pindah
+    // deployment/redeploy dengan URL /exec yang berbeda (redeploy versi
+    // BARU dari deployment yang SAMA tidak mengubah URL ini, jadi biasanya
+    // tidak perlu diganti kecuali membuat deployment baru dari awal).
+    var EXEC_URL = "https://script.google.com/macros/s/AKfycbwwaVC7GNTlNC5qFSj0VZDD89fB36rNdUokLwnr_nfYsP9yzVyfYhSKnYQtEIWDcqar/exec";
+    var iframe = document.getElementById('app');
+
+    // Samakan tinggi iframe dengan tinggi layar yang BENAR-BENAR terlihat di HP.
+    // 100vh/100dvh saja kadang masih meleset di sebagian browser HP saat address
+    // bar menyembul/menyusut ketika scroll -- ini bikin tombol/navbar di bagian
+    // bawah halaman ketutup. window.visualViewport lebih akurat.
+    function setIframeHeight(){
+      var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      iframe.style.height = h + 'px';
+    }
+    setIframeHeight();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setIframeHeight);
+    } else {
+      window.addEventListener('resize', setIframeHeight);
+    }
+
+    function loadMode(mode){
+      // "mode" di sini sebenarnya adalah nilai parameter ?page= di project
+      // Gekrafs PartnerUp (page=admin/info/asesmen, atau kosong untuk
+      // halaman pendaftaran) -- namanya tetap "mode" di wrapper ini supaya
+      // konsisten dengan skema INSTRUKSI-REMOVE-BANNER.md, tapi secara
+      // teknis dikirim sebagai query param "page" ke Apps Script.
+      iframe.src = EXEC_URL + '?embed=1' + (mode ? ('&page=' + encodeURIComponent(mode)) : '');
+    }
+    loadMode('');
+    window.addEventListener('message', function(e){
+      if (!e.data || typeof e.data !== 'object' || e.data.type !== 'gkf-navigate') return;
+      loadMode(e.data.mode || '');
+    });
+  </script>
+</body>
+</html>
