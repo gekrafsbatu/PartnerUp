@@ -42,7 +42,16 @@
       // teknis dikirim sebagai query param "page" ke Apps Script.
       iframe.src = EXEC_URL + '?embed=1' + (mode ? ('&page=' + encodeURIComponent(mode)) : '');
     }
-    loadMode('');
+
+    // Baca parameter ?page= dari URL wrapper ITU SENDIRI saat pertama
+    // dibuka -- supaya link yang dikirim lewat email (misal
+    // ".../PartnerUp/?page=asesmen") langsung membuka halaman yang
+    // dimaksud, bukan selalu jatuh ke halaman pendaftaran.
+    function getInitialPageFromUrl_() {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('page') || '';
+    }
+    loadMode(getInitialPageFromUrl_());
     window.addEventListener('message', function(e){
       if (!e.data || typeof e.data !== 'object' || e.data.type !== 'gkf-navigate') return;
       loadMode(e.data.mode || '');
