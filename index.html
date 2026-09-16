@@ -34,24 +34,36 @@
       window.addEventListener('resize', setIframeHeight);
     }
 
-    function loadMode(mode){
+    function loadMode(mode, extraQuery){
       // "mode" di sini sebenarnya adalah nilai parameter ?page= di project
-      // Gekrafs PartnerUp (page=admin/info/asesmen, atau kosong untuk
-      // halaman pendaftaran) -- namanya tetap "mode" di wrapper ini supaya
-      // konsisten dengan skema INSTRUKSI-REMOVE-BANNER.md, tapi secara
-      // teknis dikirim sebagai query param "page" ke Apps Script.
-      iframe.src = EXEC_URL + '?embed=1' + (mode ? ('&page=' + encodeURIComponent(mode)) : '');
+      // Gekrafs PartnerUp (page=admin/info/asesmen/kehadiran, atau kosong
+      // untuk halaman pendaftaran) -- namanya tetap "mode" di wrapper ini
+      // supaya konsisten dengan skema INSTRUKSI-REMOVE-BANNER.md, tapi
+      // secara teknis dikirim sebagai query param "page" ke Apps Script.
+      // extraQuery: parameter tambahan selain page (misal sesi_id untuk
+      // link check-in kehadiran), sudah dalam format "&key=value&...".
+      iframe.src = EXEC_URL + '?embed=1' + (mode ? ('&page=' + encodeURIComponent(mode)) : '') + (extraQuery || '');
     }
 
-    // Baca parameter ?page= dari URL wrapper ITU SENDIRI saat pertama
-    // dibuka -- supaya link yang dikirim lewat email (misal
-    // ".../PartnerUp/?page=asesmen") langsung membuka halaman yang
-    // dimaksud, bukan selalu jatuh ke halaman pendaftaran.
-    function getInitialPageFromUrl_() {
+    // Baca SEMUA parameter dari URL wrapper ITU SENDIRI saat pertama
+    // dibuka -- bukan cuma ?page=, tapi juga parameter lain seperti
+    // ?sesi_id= (dipakai link check-in kehadiran). Supaya link apa pun
+    // yang dikirim lewat email/QR (misal ".../PartnerUp/?page=kehadiran&
+    // sesi_id=XXXX") langsung membuka halaman yang dimaksud dengan benar,
+    // bukan selalu jatuh ke halaman pendaftaran atau kehilangan sesi_id-nya.
+    function getInitialLoadParams_() {
       var params = new URLSearchParams(window.location.search);
-      return params.get('page') || '';
+      var page = params.get('page') || '';
+      var extra = '';
+      params.forEach(function(value, key) {
+        if (key === 'page' || key === 'embed') return; // sudah ditangani terpisah
+        extra += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+      });
+      return { page: page, extra: extra };
     }
-    loadMode(getInitialPageFromUrl_());
+    var initialParams = getInitialLoadParams_();
+    loadMode(initialParams.page, initialParams.extra);
+
     window.addEventListener('message', function(e){
       if (!e.data || typeof e.data !== 'object' || e.data.type !== 'gkf-navigate') return;
       loadMode(e.data.mode || '');
